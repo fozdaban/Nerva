@@ -23,6 +23,12 @@ not changes to the proposed mobile API schema. Set actual recording placement:
 canonical metadata currently defaults to wrist and takes priority over gait's
 fallback placement. Unknown/unsupported placements return retest.
 
+IMU tapping (`extract_tapping_imu`) likewise returns internal features and
+window/event evidence. Explicit segment IDs preserve discontinuities so missing
+data is not interpreted as a hesitation. Event amplitudes are filtered peak
+prominences in the selected sensor's canonical unit. This is still not the
+app-facing API; the proposed task JSON envelope remains unchanged.
+
 ## Input: canonical IMU recording
 
 `Recording.data` is a pandas DataFrame in acquisition time order after configured

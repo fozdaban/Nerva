@@ -19,6 +19,7 @@ class PreparedIMU:
     starts_s: list[float]
     sampling_rate_hz: float
     expected_windows: int
+    segment_ids: list[int]
 
 
 def validate_preprocess(config: Mapping[str, Any], source_fs: float, band: list[float]) -> None:
@@ -78,8 +79,8 @@ def prepare_imu(recording: Recording, config: Mapping[str, Any], band: list[floa
     bandpass = butter(p["filter_order"], band, btype="bandpass", fs=fs, output="sos")
     ratio = Fraction(str(fs)) / Fraction(str(native_fs))
     ratio = ratio.limit_denominator(1000)
-    dynamic_windows, band_windows, starts = [], [], []
-    for segment in segments:
+    dynamic_windows, band_windows, starts, segment_ids = [], [], [], []
+    for segment_id, segment in enumerate(segments):
         if len(segment) < 2:
             continue
         start, end = t[segment[0]], t[segment[-1]]
@@ -101,7 +102,8 @@ def prepare_imu(recording: Recording, config: Mapping[str, Any], band: list[floa
             dynamic_windows.append(dynamic[offset:offset + width])
             band_windows.append(filtered[offset:offset + width])
             starts.append(float(start + offset / fs))
+            segment_ids.append(segment_id)
     shape = (0, width, 6)
     return PreparedIMU(np.stack(dynamic_windows) if dynamic_windows else np.empty(shape),
                        np.stack(band_windows) if band_windows else np.empty(shape),
-                       starts, fs, expected)
+                       starts, fs, expected, segment_ids)

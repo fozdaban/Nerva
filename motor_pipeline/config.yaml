@@ -70,7 +70,14 @@
       "event_merge_tolerance_s": 0.05, "minimum_valid_window_fraction": 0.5,
       "assumed_stride_length_m": null, "wrist_one_cycle_per_stride": false
     },
-    "tapping_imu": {"filter_band_hz": [0.5, 10], "minimum_peak_distance_s": 0.15, "hesitation_median_multiplier": 2},
+    "tapping_imu": {
+      "filter_band_hz": [0.5, 10], "minimum_peak_distance_s": 0.15,
+      "hesitation_median_multiplier": 2, "primary_sensor": "accel", "axis": "auto",
+      "minimum_peak_prominence": {"accel": 0.05, "gyro": 0.5},
+      "minimum_signal_rms": {"accel": 0.015, "gyro": 0.15},
+      "relative_peak_prominence": 0.1, "minimum_peaks_per_window": 3,
+      "event_merge_tolerance_s": 0.04, "minimum_valid_window_fraction": 0.5
+    },
     "tapping_video": {"hesitation_median_multiplier": 2, "hand_size_landmarks": [0, 9], "distance_landmarks": [4, 8]},
     "gait_video": {"minimum_peak_distance_s": 0.3},
     "sway": {"placement": "lower_back", "horizontal_axes": ["ax", "ay"], "filter_band_hz": [0.1, 3]},

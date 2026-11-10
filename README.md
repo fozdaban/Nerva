@@ -3,7 +3,7 @@
 Student-project foundation for interpretable wearable motor measurements.
 Implemented stages: proposed data contract/config, IMU input adapter, seeded
 synthetic fixtures, task-aware IMU quality gates, preprocessing and windowed
-tremor and gait features. Tapping, sway, repetitions and video quality checks
+tremor, gait and IMU tapping features. Video analysis, sway and repetitions
 are **not implemented yet**.
 No diagnoses, disease probabilities or clinical scores are produced.
 
@@ -97,7 +97,27 @@ require the explicit `wrist_one_cycle_per_stride` assumption. Speed remains null
 without a configured stride length; turn counting remains unavailable.
 Canonical metadata defaults to wrist, so ankle inputs must set placement.
 
+Extract wrist IMU tapping metrics:
+
+```python
+from motor_pipeline.synthetic import tapping
+from motor_pipeline.features import extract_tapping_imu
+
+wrist = normalize_imu(tapping(), config, metadata={"placement": "wrist"})
+taps = extract_tapping_imu(wrist, config)
+if taps["status"] == "ok":
+    print(taps["features"]["tap_rate_hz"])
+    print(taps["features"]["amplitude_decrement_fraction"])
+```
+
+IMU tap amplitude is a wrist-motion proxy. Decrement describes the observed
+event span, not an extrapolation over excluded time. Gaps do not become
+hesitations; global amplitude trends are withheld across discontinuous segments.
+
+See [the roadmap](motor_pipeline/docs/roadmap.md) for completed work, remaining
+modules, integration decisions and validation requirements.
+
 Next stages, each with tests and a progress report:
-IMU/video tapping → sway → repetitions → uncertainty → task API → personal
+video tapping/gait → sway → repetitions → uncertainty → task API → personal
 baselines → summaries → dataset/model evaluation → validation. Dataset licenses,
 clinical performance and phone processing speeds have not yet been assessed.

@@ -1,7 +1,7 @@
-# Validation through gait features
+# Validation through IMU tapping features
 
 Date: 2026-11-10. Scope: IMU ingestion, synthetic fixtures, IMU quality gates,
-preprocessing, tremor and gait features.
+preprocessing, tremor, gait and IMU tapping features.
 
 ## Executed checks
 
@@ -13,6 +13,7 @@ preprocessing, tremor and gait features.
 | Preprocessing | 16 tests passed | Resampling and RMS at multiple rates; gravity removal; anti-alias filtering; independent segments around gaps/NaNs/clipping; high-order filter stability; invalid configuration |
 | Tremor | 44 tests passed | ±0.2 Hz frequency recovery at 3, 3.2, 5, 5.1, 7, 11.8 and 12 Hz across 50/100/200 Hz; power/RMS recovery; rotation invariance; magnitude doubling; low-amplitude abstention; intermittent windows; fragmented signals; JSON-safe values |
 | Gait | 39 tests passed | Cadence at 80/120/160 steps/min across 50/100/200 Hz; stride time/CV; unique counts; variable intervals; fixed rotations; signed axes; wrist swing amplitude and explicit stride mapping; calibration-based speed; exclusions/retest; JSON-safe evidence |
+| IMU tapping | 38 tests passed | Tap rates 1.5/2/3/4 Hz across 50/100/200 Hz; observed-span decrement; increasing amplitudes; unique counts; long pause vs missing data; polarity/rotation; gyro units; fragmented/absent signals; JSON-safe output |
 
 Tests ran on Windows with CPython 3.13.3, NumPy 2.5.4, pandas 2.3.0 and
 pytest 9.2.0. Python 3.11 is the requested target and the source uses compatible
@@ -61,6 +62,11 @@ ankle fixture took median **11.78 ms**, maximum **21.34 ms**, across 20 local
 calls, producing 13 accepted windows. This excludes disk loading, ingestion,
 process startup and imports. This is another local steady-state smoke benchmark.
 
+IMU tapping on an already-normalized 30-second, 100 Hz fixture took median
+**8.65 ms**, maximum **9.56 ms**, over 20 calls with 13 supported windows.
+This includes quality, preprocessing, event merging, timing, amplitude fitting
+and IQRs; it excludes I/O, ingestion and startup, as above.
+
 ## What the fixtures establish
 
 The tremor fixture has a known signed single-axis oscillation; its Fourier peak
@@ -100,10 +106,19 @@ limitation. Real walking, turns, pauses, irregular gait, strap movement and
 arm-swing/stride coupling require recorded-data validation. Periodic gestures
 can satisfy these engineering cycle checks without being walking.
 
+Tapping tests recover configured rates within 2%, constant-rhythm CV below 0.05,
+and observed-span decrement within 0.03 absolute. Decrement is compared against
+the known envelope evaluated at retained event times, not the full source span.
+A 3-second removed movement run creates one 3.5-second inter-tap hesitation in a
+2 Hz fixture. Missing sensor data instead separates segments and is not counted
+as hesitation. Global amplitude trends across those segments are withheld.
+These checks verify fixture behavior, not correspondence between wrist motion
+and actual finger taps.
+
 ## Remaining validation and failure cases
 
-- Tremor/gait features, quality scores, reasons and minimal retest responses are
-  implemented and tested. Tapping/sway/reps, full task JSON serialization,
+- Tremor/gait/IMU tapping features, quality scores, reasons and retest responses
+  are implemented and tested. Video/sway/reps, full task JSON serialization,
   calibrated confidence and summaries remain unimplemented.
 - A missing required channel or timestamp raises an input error. Optional missing
   gyroscope values remain NaN; later tasks must reject absent required signals.

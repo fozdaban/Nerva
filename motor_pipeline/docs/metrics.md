@@ -1,4 +1,4 @@
-# Implemented motor features: tremor and gait
+# Implemented motor features: tremor, gait and IMU tapping
 
 These are motor signal measurements and provisional signal-detection rules.
 There are no clinical reference ranges or diagnostic interpretations. All bands,
@@ -110,7 +110,7 @@ simultaneous oscillations, and may select harmonics of non-sinusoidal motion.
 Band-edge power and low signals are especially uncertain. Conservative segment
 exclusion can request retest even when overall missingness is under 5%.
 Real-data accuracy, confidence calibration, repeatability and minimum detectable
-change remain unvalidated. Tapping, sway and repetition features remain unimplemented.
+change remain unvalidated. Video, sway and repetition features remain unimplemented.
 
 ## Gait processing and event semantics
 
@@ -188,3 +188,68 @@ correlation are retained as internal evidence. Reasons and limitations are
 included in the internal result. This does not modify the proposed mobile API
 schema. Features with insufficient evidence remain null. No typical clinical
 ranges or clinical precision have been established for these estimates.
+
+## IMU tapping processing
+
+`extract_tapping_imu` requires wrist metadata and all six canonical channels.
+The quality gate requires evidence of movement. Filter complete segments at
+0.5–10 Hz using the shared preprocessing and 4-second, 50%-overlapping windows.
+Default signal is acceleration; gyro can be selected explicitly. Auto projection
+uses the highest-variance direction and selects its sign using the third central
+moment so sparse pulses point upward. Alternatively configure a signed axis.
+This is a pulse-motion convention, not an anatomical orientation estimate.
+
+Default detection thresholds under `features.tapping_imu`:
+
+- projected RMS ≥0.015 m/s² (accel) or 0.15 °/s (gyro);
+- peak prominence ≥max(0.05 m/s² or 0.5 °/s, 10% of window peak-to-peak signal);
+- peak separation ≥0.15 s;
+- at least three peaks in a supported window;
+- at least three supported windows and 50% of expected windows.
+
+These engineering defaults are not clinically calibrated. No regularity gate is
+applied: irregular rhythm and pauses are measurements of interest. Counts merge
+overlapping-window detections within 0.04 s, independently per uninterrupted
+prepared segment. Event amplitude is the median prominence of that event across
+its window detections. Sparse windows can contribute events even if they cannot
+provide a supported rhythm estimate.
+
+Global intervals join successive unique events only within a common segment.
+This lets a long pause between tapping runs count once while excluding missing
+data. An interval can also represent a missed low-amplitude tap, so a hesitation
+count cannot establish the cause. Preparation excludes unobserved margins and
+partial windows; no event count is extrapolated to the full recording.
+
+## IMU tapping metric definitions
+
+Amplitude unit is m/s² by default, or °/s for gyro. These are filtered wrist-motion
+proxies, not direct finger-opening distance or contact measurements.
+
+| Name | Calculation / plain-language meaning | Unit / range |
+| --- | --- | --- |
+| `tap_count` | Count of unique detected events across prepared segments | Integer; ≥0 |
+| `tap_rate_hz` | 1 / mean within-segment inter-event interval, including supported pauses | taps/s; >0 |
+| `inter_tap_interval_cv` | Sample SD / mean of within-segment intervals | Fraction; ≥0 |
+| `median_tap_amplitude` | Median event peak prominence | Selected sensor amplitude; >0 |
+| `amplitude_slope_per_s` | Least-squares event amplitude slope versus elapsed seconds | Selected amplitude/s; signed or null |
+| `amplitude_decrement_fraction` | 1 − fitted last amplitude / fitted first amplitude, over observed events | Dimensionless; signed or null |
+| `hesitation_count` | Number of unique intervals strictly greater than 2× the median interval (configurable) | Integer; ≥0 |
+
+Negative amplitude slope means declining motion amplitude. A negative decrement
+fraction means increasing amplitude; values are not clipped into an assumed
+decline. Linear fits describe the observed event span after filtering/trimming,
+not the whole requested task. Global slope and decrement are null if events span
+multiple discontinuous segments, or if the fit cannot be defined; within-window
+trends remain available. No taps or insufficient supported windows returns
+`retest`, rather than zero-rate or confident absent-symptom claims.
+
+Output follows the internal feature-stage pattern with per-window evidence,
+IQRs and quality score. Event times, amplitudes, segment IDs and included
+intervals are retained for auditing. Window count/hesitation IQRs are not
+uncertainty intervals for global event counts. Final confidence levels and
+bootstrap intervals await the dedicated uncertainty stage.
+
+Small impulses are smoothed by the band-pass: absolute amplitudes depend on tap
+rate, sampling, mounting and pulse shape. The decrement tests use identical pulse
+shapes with known changes. Real-data agreement with video, manual counts,
+finger excursion and clinically relevant changes remains unvalidated.
