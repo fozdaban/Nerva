@@ -6,6 +6,23 @@ schema and is a target for later modules, not an implemented analysis API.
 Outputs describe motor measurements, never diagnoses, disease probabilities or
 MDS-UPDRS scores. Clinical interpretations and thresholds are outside this stage.
 
+The task-aware IMU quality gate is now implemented; see [quality.md](quality.md).
+`IMUQuality.as_dict()` provides the existing `score`/`reasons` quality object.
+`retest_response()` provides the requested minimal failure response without
+metrics. Internal audit measurements do not change the proposed output schema.
+
+Tremor extraction is implemented as an internal feature-stage function
+(`extract_tremor`), with named features, per-window values and IQRs. It does not
+implement or modify the proposed mobile API envelope below. See
+[metrics.md](metrics.md) for definitions and low-signal behavior.
+
+Gait extraction (`extract_gait`) uses the same internal feature-stage pattern.
+It additionally retains deduplicated event times, supported cycle intervals,
+projection direction, placement and limitations. These remain internal evidence,
+not changes to the proposed mobile API schema. Set actual recording placement:
+canonical metadata currently defaults to wrist and takes priority over gait's
+fallback placement. Unknown/unsupported placements return retest.
+
 ## Input: canonical IMU recording
 
 `Recording.data` is a pandas DataFrame in acquisition time order after configured

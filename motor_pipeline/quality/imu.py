@@ -174,7 +174,7 @@ def assess_imu(
         if fraction > q[maximum] + 1e-12:
             fail(f"{name} before adapter repair: {fraction:.1%}; limit {q[maximum]:.1%}.")
 
-    if q["task_requirements"][task]["movement_expected"]:
+    if q["task_requirements"][task]["movement_expected"] and not implausible_rows.any():
         acceleration = frame[["ax", "ay", "az"]].to_numpy(dtype=float)
         complete = acceleration[np.isfinite(acceleration).all(axis=1)]
         if len(complete) < 2:
