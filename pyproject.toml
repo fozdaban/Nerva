@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "motor-pipeline"
+version = "0.1.0"
+description = "Interpretable motor recording adapters and synthetic validation fixtures"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.24", "pandas>=2.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=7.4"]
+
+[tool.setuptools.packages.find]
+include = ["motor_pipeline*"]
+
+[tool.setuptools.package-data]
+motor_pipeline = ["config.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["motor_pipeline/tests"]
+addopts = "-ra"
