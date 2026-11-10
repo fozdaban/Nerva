@@ -3,8 +3,9 @@
 Student-project foundation for interpretable wearable motor measurements.
 Implemented stages: proposed data contract/config, IMU input adapter, seeded
 synthetic fixtures, task-aware IMU quality gates, preprocessing and windowed
-tremor, gait and IMU tapping features. Video analysis, sway and repetitions
-are **not implemented yet**.
+tremor, gait, IMU tapping, sway and repetition features. Video has an extraction
+adapter, quality gates and landmark-based tapping/gait metrics. Real MediaPipe
+inference on phone clips remains unvalidated.
 No diagnoses, disease probabilities or clinical scores are produced.
 
 Use Python 3.11 in a virtual environment:
@@ -49,7 +50,8 @@ recordings and edit [config.yaml](motor_pipeline/config.yaml) for hardware/expor
 changes. The file uses JSON syntax (valid YAML) to avoid adding dependencies.
 Metadata placeholders do not establish actual placement or task identity.
 
-Synthetic generators: `resting_noise`, `tremor`, `tapping`, `walking` return
+Synthetic generators: `resting_noise`, `tremor`, `tapping`, `walking`,
+`postural_sway` and `repetitions` return
 canonical DataFrames. `add_artifact` injects gaps, clipping, sudden movement,
 missing values, duplicate samples or reversed sample order. Seeded noise is
 reproducible. These are algorithm fixtures, not realistic disease simulations.
@@ -117,7 +119,46 @@ hesitations; global amplitude trends are withheld across discontinuous segments.
 See [the roadmap](motor_pipeline/docs/roadmap.md) for completed work, remaining
 modules, integration decisions and validation requirements.
 
+Analyze sway and exercise cycles:
+
+```python
+from motor_pipeline.synthetic import postural_sway, repetitions
+from motor_pipeline.features import extract_sway, extract_reps
+
+trunk = normalize_imu(postural_sway(), config, metadata={
+    "placement": "lower_back", "horizontal_alignment_confirmed": True
+})
+sway = extract_sway(trunk, config)
+exercise = extract_reps(normalize_imu(repetitions(), config), config)
+```
+
+Confirm the actual sway mounting before setting the alignment flag. Sway reports
+acceleration-domain proxies, not displacement or center-of-pressure motion.
+Exercise counts complete cycles and reports a signal-dependent range proxy.
+See [sway definitions](motor_pipeline/docs/sway.md) and
+[repetition definitions](motor_pipeline/docs/reps.md).
+
+Video analysis accepts a `LandmarkRecording`, or extracts one from a local clip:
+
+```python
+from motor_pipeline.vision import extract_landmarks
+from motor_pipeline.features import extract_tapping_video, extract_gait_video
+
+# Optional setup: pip install -e ".[video]"
+# Set video.hand_model_path / pose_model_path to existing local .task assets.
+# Confirm phone rotation and timestamp policy in config; models are not downloaded.
+hand = extract_landmarks("phone.mp4", "hand", config)
+video_taps = extract_tapping_video(hand, config)
+# pose = extract_landmarks("walking.mp4", "pose", config)
+# video_gait = extract_gait_video(pose, config)
+```
+
+Optional video imports are lazy; IMU functions do not require MediaPipe/OpenCV.
+Landmark math and loader behavior have deterministic tests; those do not validate
+MediaPipe inference, real-camera accuracy or the full video latency target.
+Read [video setup and limitations](motor_pipeline/docs/video.md) before use.
+
 Next stages, each with tests and a progress report:
-video tapping/gait → sway → repetitions → uncertainty → task API → personal
+shared uncertainty → task API → personal
 baselines → summaries → dataset/model evaluation → validation. Dataset licenses,
 clinical performance and phone processing speeds have not yet been assessed.

@@ -9,12 +9,17 @@ system.
 - Draft data contract and one configurable hardware/task settings file.
 - CSV/JSON IMU loading, explicit packet-time reconstruction, phyphox mappings,
   unit/axis conversion and original timestamp audit.
-- Seeded noise, tremor, tapping and walking fixtures plus artifacts.
+- Seeded noise, tremor, tapping, walking, sway and repetition fixtures plus artifacts.
 - IMU quality score/reasons and task-aware retest gates.
 - Anti-aliased resampling, gravity/offset filtering, independent complete
   segments and overlapping windows.
 - Tremor features, single-sensor gait features and wrist IMU tapping features,
   with window IQRs, evidence and documented limitations.
+- Acceleration-domain sway metrics and complete-cycle exercise repetitions,
+  with placement/alignment gates and gap-aware timing.
+- Video landmark representation, optional OpenCV/MediaPipe extraction adapter,
+  video quality checks and landmark-based tapping/gait features. Model inference
+  and end-to-end accuracy on real phone videos remain unvalidated.
 - Tests for known signals, bad inputs and missing-signal abstention. Tests run
   on Python 3.13; Python 3.11 syntax is checked, execution remains unverified.
 
@@ -25,18 +30,16 @@ levels, patient summaries and longitudinal analysis are not implemented yet.
 
 | Order | Remaining work | Completion evidence |
 | --- | --- | --- |
-| 1 | Video input, MediaPipe Hands/Pose extraction, video quality, finger tapping and video gait | Landmark-derived metrics tested with known trajectories; missing/occluded frames return retest; decode/extraction benchmark on representative phone clips |
-| 2 | Postural sway | Configurable mounting/horizontal plane; RMS, path proxy, frequency and feasible ellipse metric; no claim of displacement without validated reconstruction |
-| 3 | Exercise repetitions | Unique repetition counts, cycle durations/CV, motion-range proxy and slowing; synthetic count/rate/change recovery |
-| 4 | Shared uncertainty | Consistent per-metric spread/count/quality, confidence levels with reasons, and justified bootstrap/95% intervals that account for dependent windows |
-| 5 | Task API / strict JSON | One entry point per task; agreed app envelope, units/explanations, finite-or-null serialization, schema tests, retest with no metrics; optional server wrapper after deployment decision |
-| 6 | Personal longitudinal baselines | First N valid-session median/MAD, robust change scores, consecutive-session rules; SEM/MDC enabled only with test–retest evidence |
-| 7 | Template summaries | Patient and clinician text tied to computed metric names, neutral discussion prompts, no diagnostic statements; optional future rephrasing hook restricted to supplied values |
-| 8 | Dataset adapters and small models | Verify PADS/mPower license/access/rates/placement/labels, write dataset cards, then add adapters; labels determine whether a non-diagnostic model is appropriate |
-| 9 | Evaluation and validation | Subject-grouped splits, train-only normalization, versioned feature/model artifacts; accuracy/balanced accuracy/sensitivity/specificity/AUC with defensible CIs; leakage audit, ICC/SEM, MDC and failure analysis |
-| 10 | Integration and reproducibility | Real wearable/phone contract tests, complete Python 3.11 environment, end-to-end CPU/memory benchmarks and documented demo recordings/results |
+| 1 | Shared uncertainty | Consistent per-metric spread/count/quality, confidence levels with reasons, and justified bootstrap/95% intervals that account for dependent windows |
+| 2 | Task API / strict JSON | One entry point per task; agreed app envelope, units/explanations, finite-or-null serialization, schema tests, retest with no metrics; optional server wrapper after deployment decision |
+| 3 | Personal longitudinal baselines | First N valid-session median/MAD, robust change scores, consecutive-session rules; SEM/MDC enabled only with test–retest evidence |
+| 4 | Template summaries | Patient and clinician text tied to computed metric names, neutral discussion prompts, no diagnostic statements; optional future rephrasing hook restricted to supplied values |
+| 5 | Dataset adapters and small models | Verify PADS/mPower license/access/rates/placement/labels, write dataset cards, then add adapters; labels determine whether a non-diagnostic model is appropriate |
+| 6 | Evaluation and validation | Subject-grouped splits, train-only normalization, versioned feature/model artifacts; accuracy/balanced accuracy/sensitivity/specificity/AUC with defensible CIs; leakage audit, ICC/SEM, MDC and failure analysis |
+| 7 | Integration and reproducibility | Real wearable/phone contract tests, Python 3.11 execution, MediaPipe/model setup on real clips, decode/inference quality and CPU/memory benchmarks; document when video exceeds the latency target |
 
-Each module is built and tested before the next, with results reported. Some
+Modules are tested and integrated with results reported; the video/sway/repetition
+stage was developed in parallel at your request. Some
 data gathering and contract decisions should happen alongside implementation;
 real-data validation cannot be completed from synthetic fixtures alone.
 

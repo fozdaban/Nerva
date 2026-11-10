@@ -172,3 +172,60 @@ def add_artifact(
     else:
         raise ValueError(f"Unknown artifact: {kind}")
     return out.reset_index(drop=True)
+
+
+def postural_sway(
+    duration_s: float = 40,
+    sampling_rate_hz: float = 100,
+    frequency_hz: float = 0.5,
+    amplitude_x: float = 0.1,
+    amplitude_y: float = 0.06,
+    noise_std: float = 0.001,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """Horizontal acceleration ellipse, not simulated center-of-pressure motion.
+
+    x/y acceleration semi-amplitudes use m/s² and are in quadrature. Placement
+    and horizontal-alignment confirmation must be supplied separately to loaders.
+    """
+    _nonnegative(amplitude_x=amplitude_x, amplitude_y=amplitude_y)
+    if not np.isfinite(frequency_hz) or not 0 < frequency_hz < sampling_rate_hz / 2:
+        raise ValueError("frequency_hz must be positive and below Nyquist")
+    frame = resting_noise(duration_s, sampling_rate_hz, noise_std, noise_std, seed)
+    phase = 2 * np.pi * frequency_hz * frame.t
+    frame["ax"] += amplitude_x * np.cos(phase)
+    frame["ay"] += amplitude_y * np.sin(phase)
+    return frame
+
+
+def repetitions(
+    duration_s: float = 40,
+    sampling_rate_hz: float = 100,
+    period_start_s: float = 1.5,
+    period_end_s: float | None = None,
+    accel_amplitude: float = 0.5,
+    angular_range_deg: float = 40,
+    noise_std: float = 0.001,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """One motion cycle per repetition, with an optionally linearly rising period.
+
+    ax is a sinusoidal motion proxy. gx is the derivative of a sine angle with
+    peak-to-peak range ``angular_range_deg``, in degrees/s. No anatomical model
+    or relationship between that acceleration and displacement is claimed.
+    """
+    _nonnegative(accel_amplitude=accel_amplitude, angular_range_deg=angular_range_deg)
+    period_end_s = period_start_s if period_end_s is None else period_end_s
+    if any(not np.isfinite(value) or value <= 0 for value in (period_start_s, period_end_s)):
+        raise ValueError("Repetition periods must be finite and positive")
+    if 1 / min(period_start_s, period_end_s) >= sampling_rate_hz / 2:
+        raise ValueError("Repetition frequency must be below Nyquist")
+    frame = resting_noise(duration_s, sampling_rate_hz, noise_std, noise_std, seed)
+    t = frame.t.to_numpy()
+    slope = (period_end_s - period_start_s) / duration_s
+    period = period_start_s + slope * t
+    cycles = t / period_start_s if abs(slope) < 1e-12 else np.log(period / period_start_s) / slope
+    phase = 2 * np.pi * cycles
+    frame["ax"] += accel_amplitude * np.sin(phase)
+    frame["gx"] += angular_range_deg * np.pi / period * np.cos(phase)
+    return frame

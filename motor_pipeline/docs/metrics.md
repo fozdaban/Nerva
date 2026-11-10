@@ -1,8 +1,13 @@
-# Implemented motor features: tremor, gait and IMU tapping
+# Motor feature definitions
 
 These are motor signal measurements and provisional signal-detection rules.
 There are no clinical reference ranges or diagnostic interpretations. All bands,
 thresholds and window settings are configured in `config.yaml`.
+
+This document covers tremor, gait and IMU tapping. Additional implemented modules
+have their own detailed definitions: [video tapping and gait](video.md),
+[postural sway](sway.md), and [exercise repetitions](reps.md). All remain internal
+feature-stage results rather than the proposed mobile API.
 
 ## Processing and evidence
 
@@ -110,7 +115,7 @@ simultaneous oscillations, and may select harmonics of non-sinusoidal motion.
 Band-edge power and low signals are especially uncertain. Conservative segment
 exclusion can request retest even when overall missingness is under 5%.
 Real-data accuracy, confidence calibration, repeatability and minimum detectable
-change remain unvalidated. Video, sway and repetition features remain unimplemented.
+change remain unvalidated. Other implemented feature modules are linked above.
 
 ## Gait processing and event semantics
 

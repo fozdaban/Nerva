@@ -1,7 +1,8 @@
-# Validation through IMU tapping features
+# Validation through video, sway and repetition features
 
 Date: 2026-11-10. Scope: IMU ingestion, synthetic fixtures, IMU quality gates,
-preprocessing, tremor, gait and IMU tapping features.
+preprocessing, tremor, gait, IMU tapping, video landmark metrics, sway and
+exercise repetitions. The integrated suite passes **386 tests**.
 
 ## Executed checks
 
@@ -14,6 +15,17 @@ preprocessing, tremor, gait and IMU tapping features.
 | Tremor | 44 tests passed | ±0.2 Hz frequency recovery at 3, 3.2, 5, 5.1, 7, 11.8 and 12 Hz across 50/100/200 Hz; power/RMS recovery; rotation invariance; magnitude doubling; low-amplitude abstention; intermittent windows; fragmented signals; JSON-safe values |
 | Gait | 39 tests passed | Cadence at 80/120/160 steps/min across 50/100/200 Hz; stride time/CV; unique counts; variable intervals; fixed rotations; signed axes; wrist swing amplitude and explicit stride mapping; calibration-based speed; exclusions/retest; JSON-safe evidence |
 | IMU tapping | 38 tests passed | Tap rates 1.5/2/3/4 Hz across 50/100/200 Hz; observed-span decrement; increasing amplitudes; unique counts; long pause vs missing data; polarity/rotation; gyro units; fragmented/absent signals; JSON-safe output |
+| Additional synthetic sources | 12 tests passed | Known horizontal ellipse/frequency; known gyro angle range; period law for slowing; invalid parameters |
+| Sway | 26 tests passed | RMS/ellipse/frequency math at 50/100/200 Hz; deduplicated observed path; degenerate/still signals; horizontal rotations; alignment/placement gates; acceleration-only input; gap exclusions |
+| Exercise repetitions | 49 tests passed | Unique complete cycles; known period/angle; interval variability; true slowing/speeding; constant slow cycles; accepted coverage union; unsupported holes; gap-aware trend withholding |
+| Video adapter/quality/features | 41 tests passed | Known hand/pose trajectories; tracked/cropped/confidence gates; aspect ratio and scale; timing/pauses; alternating ankle events; ambiguity; strict/CFR timestamp policies; truncation rejection; synthetic AVI and injected/mock detector |
+| Cross-module new IMU tasks | 8 tests passed | Public sway/repetition fixtures against actual config at 50/100/200 Hz; known period slope; no config mutation; strict JSON; alignment confirmation |
+| Additional codec integration | 1 test passed | Actual generated 60-frame AVI roundtrip, explicit CFR timestamps, resizing, processed vs decoded dimensions, no inferred confidence |
+
+The final integration run completed in 7.29 s with no skips. Optional OpenCV was
+available. MediaPipe was **not installed**, and no model assets were downloaded.
+Injected detectors and a mocked Tasks API verify adapter behavior; they do not
+verify real MediaPipe inference. Real-person phone clips remain unvalidated.
 
 Tests ran on Windows with CPython 3.13.3, NumPy 2.5.4, pandas 2.3.0 and
 pytest 9.2.0. Python 3.11 is the requested target and the source uses compatible
@@ -67,6 +79,17 @@ IMU tapping on an already-normalized 30-second, 100 Hz fixture took median
 This includes quality, preprocessing, event merging, timing, amplitude fitting
 and IQRs; it excludes I/O, ingestion and startup, as above.
 
+New IMU tasks on already-normalized 40-second, 100 Hz synthetic recordings:
+
+| Task | Median / maximum over 20 calls | Retained windows |
+| --- | --- | --- |
+| Sway | 10.38 / 11.53 ms | 16 |
+| Repetitions | 7.55 / 8.89 ms | 18 |
+
+These are local steady-state checks, not portable latency guarantees. No
+end-to-end phone-video inference benchmark has been run. The requested complete
+video analysis latency target remains unverified.
+
 ## What the fixtures establish
 
 The tremor fixture has a known signed single-axis oscillation; its Fourier peak
@@ -115,11 +138,38 @@ as hesitation. Global amplitude trends across those segments are withheld.
 These checks verify fixture behavior, not correspondence between wrist motion
 and actual finger taps.
 
+Sway math tests use known horizontal acceleration ellipses and circles. Path
+aggregation counts unique acceleration edges only, rather than summing repeated
+overlapping windows; no edge spans missing data. The reported ellipse is a
+nominal Gaussian covariance contour, not a confidence interval or physical sway
+area. Mounting requires explicit external alignment confirmation by default.
+
+Repetition review found two issues before integration: unsupported low-motion
+windows were contributing cycles, and filter-edge bias was creating apparent
+slowing in short constant 4/6-second-cycle tasks. Detection now uses only the
+accepted-window union, splitting unsupported holes into separate analysis runs.
+Global trends exclude boundary cycles and require enough interior cycles;
+short slow tasks withhold trends. Longer constant-task regressions bound large
+spurious slopes, while known slowing/speeding fixtures still recover their
+configured changes. Low-frequency edge effects and real exercise form remain
+unvalidated; the proxies are not anatomical joint measurements.
+
+Video tests use 2D landmark trajectories and generated clips with injected
+detectors. Hand distances are aspect-corrected and normalized to observed hand
+size. Small hand/body scales, missing/cropped/low-visibility landmarks and
+ambiguous nonalternating ankle events cannot silently supply confident metrics.
+Hand per-frame detection confidence is unavailable and stays null; handedness
+scores are not used as a substitute. Pose visibility is retained when available.
+The adapter rejects overlong clips rather than silently truncating counts.
+Identity persistence of the same hand/person is not established by these tests.
+
 ## Remaining validation and failure cases
 
-- Tremor/gait/IMU tapping features, quality scores, reasons and retest responses
-  are implemented and tested. Video/sway/reps, full task JSON serialization,
-  calibrated confidence and summaries remain unimplemented.
+- Feature-stage IMU and video metrics, quality checks and retest responses are
+  implemented and tested against fixtures. Full task JSON serialization,
+  calibrated confidence, personal tracking and summaries remain unimplemented.
+- MediaPipe model inference, real phone-video camera/occlusion behavior and
+  end-to-end video speed remain unvalidated; optional dependency setup is explicit.
 - A missing required channel or timestamp raises an input error. Optional missing
   gyroscope values remain NaN; later tasks must reject absent required signals.
 - Jitter, clipping and sudden movement are retained at ingestion. The quality

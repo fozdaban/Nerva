@@ -29,6 +29,22 @@ data is not interpreted as a hesitation. Event amplitudes are filtered peak
 prominences in the selected sensor's canonical unit. This is still not the
 app-facing API; the proposed task JSON envelope remains unchanged.
 
+Sway and repetition extraction use the same feature-stage pattern. Sway requires
+confirmed trunk placement and `horizontal_alignment_confirmed: true` by default;
+this is an external mounting confirmation, not automatic orientation estimation.
+Acceleration-only sway inputs may explicitly allow absent gyro in the adapter.
+
+Video uses `vision.LandmarkRecording`: float timestamps plus `(frames,21,3)` hand
+or `(frames,33,3)` pose coordinates, processed frame width/height, optional
+per-landmark confidence and metadata. Missing landmarks are NaN; missing frames
+are not fabricated or removed. Timestamps must increase, and physical distances
+are not inferred from normalized 2D coordinates. Optional extraction decodes every
+frame, applies configured rotation and runs a local pretrained Tasks model.
+The model path is explicit; no model assets are automatically downloaded.
+See [video.md](video.md) for timestamp policy, confidence provenance, cropping,
+identity ambiguity and internal evidence. Hands detection confidence remains
+null when the model does not expose it; handedness is not a substitute.
+
 ## Input: canonical IMU recording
 
 `Recording.data` is a pandas DataFrame in acquisition time order after configured

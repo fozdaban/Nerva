@@ -78,10 +78,40 @@
       "relative_peak_prominence": 0.1, "minimum_peaks_per_window": 3,
       "event_merge_tolerance_s": 0.04, "minimum_valid_window_fraction": 0.5
     },
-    "tapping_video": {"hesitation_median_multiplier": 2, "hand_size_landmarks": [0, 9], "distance_landmarks": [4, 8]},
-    "gait_video": {"minimum_peak_distance_s": 0.3},
-    "sway": {"placement": "lower_back", "horizontal_axes": ["ax", "ay"], "filter_band_hz": [0.1, 3]},
-    "reps": {"filter_band_hz": [0.1, 5], "minimum_peak_distance_s": 0.4}
+    "tapping_video": {
+      "hesitation_median_multiplier": 2, "hand_size_landmarks": [0, 9], "distance_landmarks": [4, 8],
+      "minimum_peak_distance_s": 0.15, "minimum_peak_prominence": 0.08,
+      "minimum_hand_size": 0.03, "minimum_peaks_per_window": 3,
+      "minimum_valid_window_fraction": 0.5
+    },
+    "gait_video": {
+      "minimum_peak_distance_s": 0.3, "ankle_axis": "y", "minimum_peak_prominence": 0.02,
+      "event_merge_tolerance_s": 0.08, "minimum_steps_per_window": 3,
+      "minimum_valid_window_fraction": 0.5, "body_scale_landmarks": [11, 23],
+      "minimum_body_size": 0.05
+    },
+    "sway": {
+      "placement": "lower_back", "horizontal_axes": ["ax", "ay"], "filter_band_hz": [0.1, 3],
+      "supported_placements": ["lower_back", "chest"], "edge_trim_s": 3.0,
+      "minimum_valid_window_fraction": 0.5, "require_horizontal_alignment_confirmation": true
+    },
+    "reps": {
+      "filter_band_hz": [0.1, 5], "gravity_highpass_hz": 0.03,
+      "minimum_peak_distance_s": 0.4, "primary_sensor": "gyro", "axis": "auto",
+      "accepted_placements": ["wrist", "ankle"],
+      "minimum_signal_rms": {"accel": 0.03, "gyro": 2.0},
+      "minimum_peak_prominence": {"accel": 0.1, "gyro": 5.0},
+      "relative_peak_prominence": 0.2, "rep_duration_bounds_s": [0.4, 8.0],
+      "minimum_valid_window_fraction": 0.5, "trend_boundary_cycles": 1,
+      "minimum_trend_cycles": 3
+    }
+  },
+  "video": {
+    "hand_model_path": null, "pose_model_path": null, "max_frames": 3000,
+    "max_width_px": 640, "rotation_degrees": 0, "allow_constant_fps_timestamps": false,
+    "minimum_inside_margin": 0.0, "maximum_out_of_frame_fraction": 0.1,
+    "maximum_frame_gap_s": 0.2, "minimum_detection_confidence": 0.6,
+    "minimum_presence_confidence": 0.6, "minimum_tracking_confidence": 0.6
   },
   "uncertainty": {"method": "iqr", "bootstrap_iterations": 500, "random_seed": 42, "minimum_valid_windows": 3},
   "longitudinal": {"baseline_sessions": 3, "robust_z_threshold": 3.0, "consecutive_sessions": 2, "mdc95_multiplier": 1.96},
